@@ -1,54 +1,75 @@
 package com.davi.messenger.client.controller;
 
-import javax.swing.SwingUtilities;
-import java.util.ArrayList;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
+import com.davi.messenger.client.model.Mensagem;
 import com.davi.messenger.client.model.User;
-import com.davi.messenger.client.view.TestMain;
-import com.davi.messenger.client.view.ViewUser;
 import com.davi.messenger.client.view.Popup;
+import com.davi.messenger.client.view.ViewUser;
 
-import javafx.application.Application;
-import javafx.scene.Scene;
-import javafx.scene.control.Label;
-import javafx.stage.Stage;
 
 public class UserController {
 
+    private static final String ARQUIVO_HISTORICO = "mensagens.txt";
 
-    public static void main(String[] args) {
-		SwingUtilities.invokeLater(UserController::start);
-	}
+    private final Popup view;
+    private final Map<String, User> users = new LinkedHashMap<>();
 
-	private static void start() {
-		Popup popup = new Popup();
-        ArrayList<User> users = new ArrayList<>();
-        User user1 = new User("John Doe", "password123");
-        users.add(user1);
+    public UserController(Popup view) {
+        this.view = view;
+    }
 
-		addWithExclude(popup, users.get(0).getUsername(), "Hello, World!", users);
+    public void iniciar() {
+        view.addListenerSendButton(e -> enviarMensagem());
 
-		popup.addListenerSendButton(e -> {
-			User user = new User(popup.getUserName(), "password123");
-			user.addMessage(popup.getMessageText());
+        adicionarMensagem("John Doe", "Hello, World!");
 
-			if (user.getUsername().isEmpty() || user.getMessages().isEmpty()) {
-				popup.showMessage("Preencha o nome e a mensagem.");
-				return;
-			}
+        view.setVisible(true);
+    }
 
-			System.out.println("Enviando de " + user + ": " + user.getMessages().get(0).getMensagem());
-			addWithExclude(popup, user.getUsername(), user.getMessages().get(0).getMensagem(), users);
-			popup.clearMessageField();
-		});
+    private void enviarMensagem() {
+        String nome = view.getUserName();
+        String texto = view.getMessageText();
 
-		popup.setVisible(true);
-	}
+        if (nome.isEmpty() || texto.isEmpty()) {
+            view.showMessage("Preencha o nome e a mensagem.");
+            return;
+        }
 
-	private static void addWithExclude(Popup popup, String user, String message, ArrayList<User> users) {
-		ViewUser item = popup.addMessage(user, message);
+        adicionarMensagem(nome, texto);
+        view.clearMessageField();
+    }
 
-		item.addListenerExcludeButton(e -> popup.removeMessage(item));
-        
-	}
+    private void adicionarMensagem(String nome, String texto) {
+        User user = users.computeIfAbsent(nome, n -> new User(n, "password123"));
+        Mensagem mensagem = user.addMessage(texto);
+
+        System.out.println("Enviando de " + user.getUsername() + ": " + texto);
+
+        ViewUser item = view.addMessage(user.getUsername(), texto);
+        item.addListenerExcludeButton(e -> {
+            view.removeMessage(item);
+            user.removeMessage(mensagem);
+            salvarHistorico();
+        });
+
+        salvarHistorico();
+    }
+
+    private void salvarHistorico() {
+        try (PrintWriter out = new PrintWriter(new FileWriter(ARQUIVO_HISTORICO))) {
+            for (User user : users.values()) {
+                for (Mensagem m : user.getMessages()) {
+                    out.println("Enviado por " + user.getUsername() + ": " + m.getMensagem()
+                            + " (Enviado às " + m.getHorarioFormatado() + ")");
+                }
+            }
+        } catch (IOException e) {
+            view.showMessage("Erro ao salvar o histórico: " + e.getMessage());
+        }
+    }
 }

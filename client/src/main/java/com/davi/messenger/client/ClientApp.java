@@ -1,19 +1,19 @@
 package com.davi.messenger.client;
 
-import javafx.application.Application;
-import javafx.scene.Scene;
-import javafx.scene.control.Label;
-import javafx.stage.Stage;
+import javax.swing.SwingUtilities;
 
-public class ClientApp extends Application {
-    @Override
-    public void start(Stage stage) {
-        stage.setScene(new Scene(new Label("Messager"), 300, 200));
-        stage.setTitle("Messager");
-        stage.show();
-    }
+import com.davi.messenger.client.controller.UserController;
+import com.davi.messenger.client.view.Popup;
+
+/** Ponto de entrada do cliente: monta View + Controller e inicia. */
+public class ClientApp {
 
     public static void main(String[] args) {
-        launch(args);
+        // Toda a interface Swing deve rodar na thread de eventos (EDT)
+        SwingUtilities.invokeLater(() -> {
+            Popup view = new Popup();
+            UserController controller = new UserController(view);
+            controller.iniciar();
+        });
     }
 }
