@@ -119,7 +119,6 @@ public class Popup extends JFrame {
 	}
 
 	public void clear() {
-		textFieldName.setText("");
 		textFieldMessage.setText("");
 	}
 
@@ -158,5 +157,10 @@ public class Popup extends JFrame {
 	private void scrollToBottom() {
 		SwingUtilities.invokeLater(() ->
 			scrollPane.getVerticalScrollBar().setValue(scrollPane.getVerticalScrollBar().getMaximum()));
+	}
+
+	public void setUserName(String name) {
+		textFieldName.setText(name);
+		textFieldName.setEditable(false);
 	}
 }
